@@ -1,0 +1,422 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Bill of Supply - PDF Maker</title>
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<style>
+:root{
+  --bg:#f4f6fa; --card:#ffffff; --ink:#1b2430; --muted:#5d6b7e; --line:#d9e0ea;
+  --accent:#1f5fbf; --accent-ink:#ffffff; --ok:#1b7a3d; --warn:#9a5b00; --err:#b3261e; --soft:#eaf1fc;
+  box-sizing:border-box; padding-top:env(safe-area-inset-top,0px); padding-bottom:env(safe-area-inset-bottom,0px);
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    --bg:#10151c; --card:#18202b; --ink:#e8edf4; --muted:#9aa8bb; --line:#2c3846;
+    --accent:#5b97f0; --accent-ink:#0b1320; --ok:#5fcf86; --warn:#f0b35a; --err:#ff8a80; --soft:#1d2a3d;
+  }
+}
+:root[data-theme="dark"]{
+  --bg:#10151c; --card:#18202b; --ink:#e8edf4; --muted:#9aa8bb; --line:#2c3846;
+  --accent:#5b97f0; --accent-ink:#0b1320; --ok:#5fcf86; --warn:#f0b35a; --err:#ff8a80; --soft:#1d2a3d;
+}
+html{scroll-padding-top:env(safe-area-inset-top,0px)}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--ink);font-family:"Segoe UI",system-ui,-apple-system,Roboto,Arial,sans-serif;line-height:1.45}
+.wrap{max-width:760px;margin:0 auto;padding:16px 14px 40px}
+h1{font-size:1.35rem;margin:6px 0 2px}
+.sub{color:var(--muted);font-size:.92rem;margin:0 0 14px}
+.card{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:14px;margin-bottom:14px}
+.card h2{font-size:1rem;margin:0 0 10px}
+.grid{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.full{grid-column:1/-1}
+label{display:block;font-size:.82rem;color:var(--muted);margin-bottom:3px}
+input,select{width:100%;padding:10px 11px;font-size:1rem;color:var(--ink);background:var(--bg);border:1px solid var(--line);border-radius:8px;font-family:inherit}
+input:focus,select:focus{outline:2px solid var(--accent);outline-offset:0}
+.hint{font-size:.78rem;color:var(--muted);margin-top:3px;min-height:1em}
+.fixed{background:var(--soft);border-radius:8px;padding:9px 11px;font-size:.88rem;color:var(--muted)}
+.item{border:1px dashed var(--line);border-radius:10px;padding:10px;margin-bottom:10px}
+.item-head{display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;font-weight:600;font-size:.9rem}
+.item-grid{display:grid;grid-template-columns:repeat(6,1fr);gap:8px}
+.c6{grid-column:span 6}.c3{grid-column:span 3}.c2{grid-column:span 2}
+.amt{font-size:.85rem;color:var(--muted);margin-top:6px;text-align:right}
+button{font-family:inherit;font-size:1rem;border-radius:8px;border:1px solid var(--line);background:var(--card);color:var(--ink);padding:9px 14px;cursor:pointer}
+button.link{border:none;background:none;color:var(--err);padding:2px 6px;font-size:.85rem}
+button.primary{background:var(--accent);color:var(--accent-ink);border-color:var(--accent);font-weight:600;width:100%;padding:13px;font-size:1.05rem}
+button:disabled{opacity:.6;cursor:default}
+.total{display:flex;justify-content:space-between;align-items:baseline;font-size:1.05rem}
+.total b{font-size:1.3rem}
+.words{margin-top:6px;font-weight:600}
+.msg{margin-top:10px;font-size:.92rem;min-height:1.2em}
+.msg.ok{color:var(--ok)}.msg.err{color:var(--err)}.msg.warn{color:var(--warn)}
+.paper{background:#fff;border:1px solid var(--line);border-radius:6px;box-shadow:0 2px 10px rgba(0,0,0,.12);overflow:hidden;max-width:620px;margin:0 auto}
+.paper svg{display:block;width:100%;height:auto}
+.row2{display:grid;grid-template-columns:1fr 2fr;gap:10px;margin-top:12px}
+[hidden]{display:none !important}
+@media (max-width:520px){
+  .grid{grid-template-columns:1fr}
+  .c3,.c2{grid-column:span 3}
+  .c2.q{grid-column:span 3}
+}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1>🧾 Bill of Supply - PDF Maker</h1>
+  <p class="sub">Enter the details, check the preview, then download the bill as a PDF. The first letter of each word in names and descriptions is capitalised automatically.</p>
+
+  <div id="formView">
+    <div class="card">
+      <h2>Supplier (fixed)</h2>
+      <div class="fixed">Shri Ram Pashu Aahar, Subhash Ganj Dabra · GSTIN/UIN: 23AFYPG9821J1ZX · Madhya Pradesh</div>
+    </div>
+
+    <div class="card">
+      <h2>Bill details</h2>
+      <div class="grid">
+        <div><label for="inv">Invoice No.</label><input id="inv" inputmode="numeric" placeholder="e.g. 127"></div>
+        <div><label for="dt">Date (Dated)</label><input id="dt" type="date"></div>
+        <div class="full"><label for="buyer">Buyer name</label><input id="buyer" placeholder="e.g. gaushala gram panchyat" autocomplete="off"><div class="hint" id="buyerHint"></div></div>
+        <div><label for="city">City / Village name</label><input id="city" placeholder="e.g. kumhara" autocomplete="off"><div class="hint" id="cityHint"></div></div>
+        <div><label for="state">State</label><input id="state" value="Madhya Pradesh" autocomplete="off"><div class="hint" id="stateHint"></div></div>
+      </div>
+    </div>
+
+    <div class="card">
+      <h2>Items</h2>
+      <div id="items"></div>
+      <button id="addItem" type="button">+ Add another item</button>
+      <div class="msg warn" id="hsnWarn"></div>
+    </div>
+
+    <div class="card">
+      <div class="total"><span>Total Amount</span><b id="totalAmt">₹ 0.00</b></div>
+      <div class="words" id="totalWords"></div>
+    </div>
+
+    <button class="primary" id="previewBtn" type="button">Preview bill</button>
+    <div class="msg" id="msg" role="status"></div>
+  </div>
+
+  <div id="previewView" hidden>
+    <div class="card"><h2>Preview</h2><div class="sub" style="margin:0">Check everything. If it looks right, download the PDF.</div></div>
+    <div class="paper" id="paper"></div>
+    <div class="row2">
+      <button id="backBtn" type="button">← Edit</button>
+      <button class="primary" id="pdfBtn" type="button">Download PDF</button>
+    </div>
+    <div class="msg" id="msg2" role="status"></div>
+  </div>
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+<script>
+const MAX_ITEMS = 9;
+const $ = (id) => document.getElementById(id);
+
+/* ---------- helpers ---------- */
+function tc(s){
+  return String(s||"").trim().replace(/\s+/g," ").toLowerCase()
+    .replace(/(^|[^a-z0-9'])([a-z])/g,(m,a,b)=>a+b.toUpperCase());
+}
+const MON = ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
+function fmtDate(iso){
+  const m = /^(\d{4})-(\d{2})-(\d{2})$/.exec(iso||"");
+  return m ? m[3]+"-"+MON[+m[2]-1]+"-"+m[1] : "";
+}
+const ONES = ["Zero","One","Two","Three","Four","Five","Six","Seven","Eight","Nine","Ten","Eleven","Twelve","Thirteen","Fourteen","Fifteen","Sixteen","Seventeen","Eighteen","Nineteen"];
+const TENS = ["","","Twenty","Thirty","Forty","Fifty","Sixty","Seventy","Eighty","Ninety"];
+function w99(n){ if(n<20) return ONES[n]; const t=Math.floor(n/10), o=n%10; return TENS[t]+(o?" "+ONES[o]:""); }
+function amountWords(total){
+  const amt = Math.round(total*100)/100;
+  const rupees = Math.floor(amt+1e-9);
+  const paise = Math.round((amt-rupees)*100);
+  const cr = Math.floor(rupees/1e7), lk = Math.floor((rupees%1e7)/1e5), th = Math.floor((rupees%1e5)/1e3),
+        hu = Math.floor((rupees%1e3)/100), rest = rupees%100;
+  let rw = "Zero";
+  if(rupees>0){
+    rw = ((cr>0?w99(cr)+" Crore ":"")+(lk>0?w99(lk)+" Lakh ":"")+(th>0?w99(th)+" Thousand ":"")+
+          (hu>0?w99(hu)+" Hundred ":"")+(rest>0?w99(rest):"")).trim();
+  }
+  return amt<=0 ? "" : "INR "+rw+(paise>0?" and "+w99(paise)+" Paise":"")+" Only";
+}
+const money = (n)=> n.toLocaleString("en-IN",{minimumFractionDigits:2,maximumFractionDigits:2});
+function say(id, text, cls){ const m=$(id); m.textContent=text; m.className="msg "+(cls||""); }
+
+/* ---------- items UI ---------- */
+function itemHTML(){
+  return `<div class="item">
+    <div class="item-head"><span class="ttl">Item</span><button type="button" class="link rm">Remove</button></div>
+    <div class="item-grid">
+      <div class="c6"><label>Description of Goods</label><input class="desc" placeholder="e.g. cattle feed (pashu aahar)" autocomplete="off"></div>
+      <div class="c2"><label>HSN/SAC</label><input class="hsn" inputmode="numeric" placeholder="Enter HSN no."></div>
+      <div class="c2 q"><label>Quantity</label><input class="qty" type="number" inputmode="decimal" step="any" min="0" placeholder="950"></div>
+      <div class="c2"><label>Unit (per)</label><input class="unit" value="kg" autocomplete="off"></div>
+      <div class="c3"><label>Rate</label><input class="rate" type="number" inputmode="decimal" step="any" min="0" placeholder="27.30"></div>
+      <div class="c3"><label>Amount</label><input class="amtv" readonly tabindex="-1" value="0.00"></div>
+    </div>
+  </div>`;
+}
+function addItem(){
+  const box = $("items");
+  if(box.children.length>=MAX_ITEMS) return;
+  box.insertAdjacentHTML("beforeend", itemHTML());
+  refreshItems();
+}
+function refreshItems(){
+  const kids = [...$("items").children];
+  kids.forEach((el,idx)=>{
+    el.querySelector(".ttl").textContent = "Item "+(idx+1);
+    el.querySelector(".rm").style.visibility = kids.length>1 ? "visible":"hidden";
+  });
+  $("addItem").disabled = kids.length>=MAX_ITEMS;
+  recalc();
+}
+function readItems(){
+  return [...$("items").children].map(el=>({
+    desc: tc(el.querySelector(".desc").value),
+    hsn: el.querySelector(".hsn").value.trim(),
+    qty: parseFloat(el.querySelector(".qty").value),
+    unit: (el.querySelector(".unit").value.trim().toLowerCase() || "kg"),
+    rate: parseFloat(el.querySelector(".rate").value),
+    el
+  }));
+}
+function recalc(){
+  let total = 0; const hsns = new Set();
+  readItems().forEach(it=>{
+    const a = (isFinite(it.qty)&&isFinite(it.rate)) ? Math.round(it.qty*it.rate*100)/100 : 0;
+    it.el.querySelector(".amtv").value = money(a);
+    total += a;
+    if(it.hsn) hsns.add(it.hsn);
+  });
+  total = Math.round(total*100)/100;
+  $("totalAmt").textContent = "₹ "+money(total);
+  $("totalWords").textContent = amountWords(total);
+  $("hsnWarn").textContent = hsns.size>1 ? "Note: the items have different HSN codes. The HSN/SAC section lower down on the bill will show only the first item's HSN." : "";
+}
+function showHints(){
+  [["buyer","buyerHint"],["city","cityHint"],["state","stateHint"]].forEach(([i,h])=>{
+    const t = tc($(i).value); $(h).textContent = t ? "Will appear on the bill as: "+t : "";
+  });
+}
+$("addItem").addEventListener("click",addItem);
+$("items").addEventListener("input",recalc);
+$("items").addEventListener("click",(e)=>{
+  if(e.target.classList.contains("rm")){ e.target.closest(".item").remove(); refreshItems(); }
+});
+["buyer","city","state"].forEach(i=>$(i).addEventListener("input",showHints));
+(function init(){
+  const d = new Date();
+  $("dt").value = d.getFullYear()+"-"+String(d.getMonth()+1).padStart(2,"0")+"-"+String(d.getDate()).padStart(2,"0");
+  addItem(); showHints();
+})();
+
+/* ---------- bill layout (shared by preview and PDF) ---------- */
+function buildOps(d, doc){
+  const ops = [];
+  const L=36, R=504, T=45, B=682, MID=270;
+  const line=(x1,y1,x2,y2,w=0.6)=>ops.push({k:"l",x1,y1,x2,y2,w});
+  const text=(s,x,y,size=8.5,style="normal",align="left")=>ops.push({k:"t",s:String(s),x,y,size,style,align});
+  const tw=(s,size,style)=>{ doc.setFont("helvetica",style); doc.setFontSize(size); return doc.getTextWidth(String(s)); };
+  const fit=(s,maxW,size,style)=>{ while(size>5 && tw(s,size,style)>maxW) size-=0.25; return size; };
+  const ftext=(s,x,y,maxW,size,style,align)=>text(s,x,y,fit(s,maxW,size,style),style,align);
+  function rupee(x,y,size){ // vector rupee sign, x = left edge, y = baseline
+    const w=size*0.55, h=size*0.72, lw=size*0.085;
+    ops.push({k:"p",w:lw,pts:[[x+0.05*w,y-h],[x+w,y-h]]});
+    ops.push({k:"p",w:lw,pts:[[x+0.05*w,y-h*0.78],[x+w,y-h*0.78]]});
+    ops.push({k:"p",w:lw,pts:[[x+0.12*w,y-h],[x+0.6*w,y-h],[x+0.85*w,y-h*0.9],[x+0.88*w,y-h*0.66],[x+0.6*w,y-h*0.52],[x+0.12*w,y-h*0.52],[x+0.95*w,y]]});
+    return w;
+  }
+
+  // outer box + title
+  line(L,T,R,T); line(L,B,R,B); line(L,T,L,B); line(R,T,R,B);
+  text("Bill of Supply",MID,32,12,"bold","center");
+
+  // header block
+  line(MID,T,MID,277); line(L,277,R,277);
+  line(385,T,385,206);
+  [81,106,131,156,181,206].forEach(y=>line(MID,y,R,y));
+  text("Invoice No.",274,T+10,7.5); text(d.inv,274,T+24,8.5,"bold");
+  text("Dated",389,T+10,7.5); text(d.date,389,T+24,8.5,"bold");
+  const fields=[["Delivery Note","Mode/Terms of Payment"],["Supplier's Ref.","Other Reference(s)"],
+    ["Buyer's Order No.","Dated"],["Despatch Document No.","Delivery Note Date"],["Despatched through","Destination"]];
+  fields.forEach((f,i)=>{ const y=81+i*25+10; text(f[0],274,y,7.5); text(f[1],389,y,7.5); });
+  text("Terms of Delivery",274,216,7.5);
+
+  // supplier / buyer
+  text("Shri Ram Pashu Aahar",40,57,9,"bold");
+  text("Subhash Ganj Dabra",40,69,8.5);
+  text("GSTIN/UIN: 23AFYPG9821J1ZX",40,81,8.5);
+  text("State Name :  Madhya Pradesh, Code : 23",40,93,8.5);
+  line(L,122,MID,122);
+  text("Buyer",40,133,7.5);
+  ftext(d.buyer,40,147,226,9.5,"bold");
+  ftext("City/Village Name : "+d.city,40,161,226,8.5,"normal");
+  ftext("State Name : "+d.state,40,175,226,8.5,"normal");
+
+  // items table
+  const xs=[36,47.7,241,297,349,402,425,504];
+  xs.slice(1,7).forEach(x=>line(x,277,x,462));
+  line(L,308,R,308); line(L,445,R,445); line(L,462,R,462);
+  text("Sl",41.9,290,6.5,"normal","center"); text("No.",41.9,298,6.5,"normal","center");
+  const hc=(s,a,b)=>text(s,(a+b)/2,296,8,"normal","center");
+  hc("Description of Goods",xs[1],xs[2]); hc("HSN/SAC",xs[2],xs[3]); hc("Quantity",xs[3],xs[4]);
+  hc("Rate",xs[4],xs[5]); hc("per",xs[5],xs[6]); hc("Amount",xs[6],xs[7]);
+  d.items.forEach((it,i)=>{
+    const y=308+12+i*15;
+    text(i+1,40,y,9);
+    ftext(it.desc,51,y,186,9,"bold");
+    ftext(it.hsn,244,y,50,9,"normal");
+    ftext(money(it.qty)+" "+it.unit,346,y,50,9,"bold","right");
+    ftext(money(it.rate),398,y,46,9,"normal","right");
+    ftext(it.unit,413.5,y,21,9,"normal","center");
+    ftext(money(it.amount),500,y,72,9,"bold","right");
+  });
+  text("Total",237,455,9,"normal","right");
+  const sameUnit=d.items.every(i=>i.unit===d.items[0].unit);
+  if(sameUnit){
+    const q=d.items.reduce((s,i)=>s+i.qty,0);
+    ftext(money(q)+" "+d.items[0].unit,346,455,50,9,"bold","right");
+  }
+  const tot=money(d.total), tsz=10.5;
+  const tx=tw(tot,tsz,"bold");
+  text(tot,500,456,tsz,"bold","right");
+  rupee(500-tx-4-tsz*0.55,456,tsz);
+
+  // words
+  text("Amount Chargeable (in words)",39,472,7);
+  text("E. & O.E",500,472,7,"italic","right");
+  ftext(d.words,39,487,462,9,"bold");
+
+  // HSN summary
+  line(L,494,R,494); line(L,520,R,520); line(L,536,R,536); line(L,552,R,552);
+  line(445,494,445,552);
+  text("HSN/SAC",(36+445)/2,509,8,"normal","center");
+  text("Taxable",474.5,503,7.5,"normal","center"); text("Value",474.5,513,7.5,"normal","center");
+  text(d.items[0].hsn,39,531,8);
+  text(money(d.total),500,531,8,"normal","right");
+  text("Total",440,547,8,"bold","right"); text(money(d.total),500,547,8,"bold","right");
+  text("Tax Amount (in words) :",39,568,7.5); text("NIL",130,568,9,"bold");
+
+  // declaration & signatory
+  text("Declaration",39,650,7);
+  line(39,651.5,39+tw("Declaration",7,"normal"),651.5,0.4);
+  ["We declare that this invoice shows the actual price of","the goods described and that all particulars are true","and correct."]
+    .forEach((s,i)=>text(s,39,660+i*8,7));
+  line(MID,641,R,641); line(MID,641,MID,B);
+  text("for Shri Ram Pashu Aahar",500,654,8,"bold","right");
+  text("Authorised Signatory",500,676,7.5,"normal","right");
+  text("This is a Computer Generated Invoice",MID,698,8,"normal","center");
+  return ops;
+}
+const esc = (s)=>String(s).replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;");
+function opsToSVG(ops){
+  let out = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 595.28 841.89" role="img" aria-label="Bill of Supply preview"><rect width="595.28" height="841.89" fill="#fff"/>`;
+  out += `<g stroke="#000" fill="none" stroke-linecap="round" stroke-linejoin="round">`;
+  ops.forEach(o=>{
+    if(o.k==="l") out += `<line x1="${o.x1}" y1="${o.y1}" x2="${o.x2}" y2="${o.y2}" stroke-width="${o.w}"/>`;
+    if(o.k==="p") out += `<polyline points="${o.pts.map(p=>p.join(",")).join(" ")}" stroke-width="${o.w}"/>`;
+  });
+  out += `</g><g fill="#000" font-family="Helvetica, Arial, sans-serif" style="white-space:pre">`;
+  ops.forEach(o=>{
+    if(o.k!=="t") return;
+    const anchor = o.align==="right" ? "end" : o.align==="center" ? "middle" : "start";
+    out += `<text x="${o.x}" y="${o.y}" font-size="${o.size}" text-anchor="${anchor}"` +
+      (o.style==="bold" ? ` font-weight="700"` : "") + (o.style==="italic" ? ` font-style="italic"` : "") +
+      `>${esc(o.s)}</text>`;
+  });
+  return out + `</g></svg>`;
+}
+function opsToPDF(ops){
+  const { jsPDF } = window.jspdf;
+  const doc = new jsPDF({ unit:"pt", format:"a4" });
+  doc.setDrawColor(0,0,0); doc.setTextColor(0,0,0); doc.setLineCap("round"); doc.setLineJoin("round");
+  ops.forEach(o=>{
+    if(o.k==="l"){ doc.setLineWidth(o.w); doc.line(o.x1,o.y1,o.x2,o.y2); }
+    else if(o.k==="p"){
+      doc.setLineWidth(o.w);
+      for(let i=1;i<o.pts.length;i++) doc.line(o.pts[i-1][0],o.pts[i-1][1],o.pts[i][0],o.pts[i][1]);
+    } else {
+      doc.setFont("helvetica",o.style); doc.setFontSize(o.size);
+      doc.text(o.s,o.x,o.y,{align:o.align});
+    }
+  });
+  return doc;
+}
+
+/* ---------- flow ---------- */
+let current = null;
+function collect(){
+  const inv = $("inv").value.trim(), date = fmtDate($("dt").value);
+  const buyer = tc($("buyer").value), city = tc($("city").value), state = tc($("state").value);
+  if(!inv) return {err:"Please enter the Invoice No."};
+  if(!date) return {err:"Please choose a date."};
+  if(!buyer) return {err:"Please enter the buyer name."};
+  if(!city) return {err:"Please enter the City / Village name."};
+  if(!state) return {err:"Please enter the State."};
+  const items = [];
+  for(const it of readItems()){
+    if(!it.desc && !isFinite(it.qty) && !isFinite(it.rate)) continue;
+    if(!it.desc) return {err:"Please enter a description for every item."};
+    if(!isFinite(it.qty) || it.qty<=0) return {err:"Please enter a valid quantity ("+it.desc+")."};
+    if(!isFinite(it.rate) || it.rate<0) return {err:"Please enter a valid rate ("+it.desc+")."};
+    it.amount = Math.round(it.qty*it.rate*100)/100;
+    items.push(it);
+  }
+  if(!items.length) return {err:"Please enter at least one item."};
+  const total = Math.round(items.reduce((s,i)=>s+i.amount,0)*100)/100;
+  const d = {inv,date,buyer,city,state,items,total,words:amountWords(total)};
+  const all = [inv,buyer,city,state,...items.flatMap(i=>[i.desc,i.hsn,i.unit])].join("");
+  if(/[^\u0000-\u00ff]/.test(all)) return {err:"The PDF supports English letters and numbers only. Please remove any other characters."};
+  return {d};
+}
+$("previewBtn").addEventListener("click",()=>{
+  say("msg","");
+  if(!(window.jspdf && window.jspdf.jsPDF)){ say("msg","The PDF library failed to load. Check your internet connection and reload the page.","err"); return; }
+  const r = collect();
+  if(r.err){ say("msg",r.err,"err"); return; }
+  current = r.d;
+  const doc = new window.jspdf.jsPDF({unit:"pt",format:"a4"});
+  $("paper").innerHTML = opsToSVG(buildOps(current, doc));
+  say("msg2","");
+  $("formView").hidden = true; $("previewView").hidden = false;
+  window.scrollTo(0,0);
+});
+$("backBtn").addEventListener("click",()=>{
+  $("previewView").hidden = true; $("formView").hidden = false; window.scrollTo(0,0);
+});
+async function savePDF(buf, filename){
+  let dl = null;
+  try{ if(window.claude && window.claude.use) dl = await window.claude.use("downloads"); }catch(e){ dl = null; }
+  if(dl){
+    try{ await dl.save({filename, data: buf}); return "saved"; }
+    catch(e){ if(e && e.code==="declined") return "declined"; throw e; }
+  }
+  const blob = new Blob([buf],{type:"application/pdf"});
+  const a = document.createElement("a");
+  a.href = URL.createObjectURL(blob); a.download = filename;
+  document.body.appendChild(a); a.click(); a.remove();
+  setTimeout(()=>URL.revokeObjectURL(a.href),4000);
+  return "saved";
+}
+$("pdfBtn").addEventListener("click", async ()=>{
+  if(!current) return;
+  const btn = $("pdfBtn"); btn.disabled = true; say("msg2","Creating the PDF...");
+  try{
+    const measure = new window.jspdf.jsPDF({unit:"pt",format:"a4"});
+    const doc = opsToPDF(buildOps(current, measure));
+    const buf = doc.output("arraybuffer");
+    const safe = current.inv.replace(/[^A-Za-z0-9_-]/g,"_");
+    const name = "Bill_of_Supply_"+safe+".pdf";
+    const r = await savePDF(buf, name);
+    if(r==="saved") say("msg2","Done! PDF downloaded: "+name,"ok");
+    else say("msg2","Download was cancelled. Please try again.","warn");
+  }catch(e){
+    console.error(e);
+    say("msg2","Something went wrong: "+(e && e.message ? e.message : e),"err");
+  }finally{ btn.disabled = false; }
+});
+</script>
+</body>
+</html>
